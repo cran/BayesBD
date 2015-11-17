@@ -1,0 +1,13 @@
+40543c1932041b086164996129808845 *DESCRIPTION
+aecd559428730e38195d26d62d5629ea *NAMESPACE
+bb9f5e7bdf1362b9149cbecbbec691ae *R/sourceFunction.R
+321b1b85d69ae9cb6a0527c191e64312 *data/BayesEst.RData
+f28d6f105121f7ca3cd52af0068d5e81 *data/datalist
+a04034217bc538eaf86df9ba6135b0fa *man/BayesBD-package.Rd
+5a99ceb4c9b5e52684c6a9ce63fc237c *man/BayesBD.binary.Rd
+9ff92da5e7e75fe807e7dc1aef01afc3 *man/BayesEst.Rd
+4bb9a98928fa4311209c2eb6557e69de *man/eigen.fun.Rd
+074c4c5e5d8b211950331e59d9739aa6 *man/ellipse.Rd
+044f23b45994eac46d2cbd0e89b0eb73 *man/par2obs.Rd
+d518ed1359c9657b59f968caf5261aac *man/triangle.Rd
+96345d1b790a631f5977443937d93ad3 *man/uni.slice.Rd
