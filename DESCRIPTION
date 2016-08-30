@@ -1,19 +1,17 @@
 Package: BayesBD
 Type: Package
-Title: Bayesian Boundary Detection in Images
-Version: 0.1
-Date: 2015-11-15
-Author: Meng Li
-Maintainer: Meng Li <xylimeng@gmail.com>
-Imports: plotrix
-Description: It estimate the boundaries in an image adaptively to the smoothness
-    level of the boundary.The method is applicable to images with binary noise,
-    Gaussian noise or Poisson noise.
-Depends: R(>= 2.10.0)
+Title: Bayesian Inference for Image Boundaries
+Version: 1.0
+Date: 2016-08-02
+Author: Nicholas Syring, Meng Li
+Maintainer: Nicholas Syring <nasyrin@gmail.com>
+Description: Provides tools for carrying out a Bayesian analysis of image boundaries.  Functions are provided
+  for both binary (Bernoulli) and continuous (Gaussian) images.  Examples, along with an interactive shiny function
+  illustrate how to perform simulations, analyze custom data, and plot estimates and credible intervals.    
 License: GPL (>= 3)
-LazyData: TRUE
-RoxygenNote: 5.0.0
-NeedsCompilation: no
-Packaged: 2015-11-16 17:09:05 UTC; mengli
+Imports: Rcpp (>= 0.12.5), shiny
+LinkingTo: Rcpp, RcppArmadillo
+NeedsCompilation: yes
+Packaged: 2016-08-30 01:13:54 UTC; Nicholas
 Repository: CRAN
-Date/Publication: 2015-11-17 14:40:29
+Date/Publication: 2016-08-30 18:33:31
