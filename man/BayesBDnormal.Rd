@@ -8,7 +8,8 @@ Bayesian boundary estimation for continuous intensity images
 Estimate boundaries in a continuous intensity image.
 }
 \usage{
-BayesBDnormal(obs, inimean, nrun, nburn, J, slice, outputAll)
+BayesBDnormal(obs, inimean, nrun, nburn, J, ordering_mu, 
+ordering_sigma, mask, slice, outputAll)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -31,6 +32,15 @@ BayesBDnormal(obs, inimean, nrun, nburn, J, slice, outputAll)
   \item{J}{
 	truncation number of the Gaussian process kernel. The number of eigenfunctions is \eqn{2J + 1}.
 }
+  \item{ordering_mu}{
+	Indicates which Gaussian distribution has larger mean intensity: "I", the Gaussian distribution inside the boundary; "O", the Gaussian distribution outside the boundary; "N", no ordering information is available. 
+}
+  \item{ordering_sigma}{
+	Indicates which Gaussian distribution has larger intensity variance: "I", the Gaussian distribution inside the boundary; "O", the Gaussian distribution outside the boundary; "N", no ordering information is available. 
+}
+  \item{mask}{
+	Logical vector (same length as obs$intensity) to indicate region of interest.  Should this data point be included in the analysis?
+}
 \item{slice}{
 	boolean where TRUE means that slice sampling will be used to sample Fourier basis function coefficients and FALSE means that Metropolis-Hastings will be used instead.
 }
@@ -51,12 +61,12 @@ If outputAll is TRUE, same as above, and additionally,
 Li, M. and Ghosal, S.(2015) "Bayesian Detection of Image Boundaries." arXiv 1508.05847.
 }
 \examples{
-\dontrun{
 set.seed(12345)
 gamma.fun = ellipse(a = 0.35, b = 0.25)
 norm.obs = parnormobs(m = 100, mu.in = 4, mu.out = 1, sd.in = 1.5, sd.out = 1, design = 'J',
  center = c(0.5,0.5), gamma.fun)
-norm.samp = BayesBDnormal(norm.obs, .4, 1000, 0, 10, TRUE, FALSE)
+\dontrun{
+norm.samp = BayesBDnormal(norm.obs, .4, 1000, 0, 10,"I","I",rep(1,10000), TRUE, FALSE)
 plotBD(norm.obs, norm.samp)
 }
 }

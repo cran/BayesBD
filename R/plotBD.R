@@ -1,9 +1,25 @@
 plotBD =
-function (obs, samples) 
+function (obs, samples = list()) 
 {
+if(is.null(samples$estimate)){
+xobs = obs$r.obs*cos(obs$theta.obs)+obs$center[1]
+    yobs = obs$r.obs*sin(obs$theta.obs)+obs$center[2]
+    if(min(obs$intensity)<0){ 
+       normalized = (obs$intensity+abs(min(obs$intensity)))/(max(obs$intensity)-min(obs$intensity))
+    }else{
+       normalized = (obs$intensity-abs(min(obs$intensity)))/(max(obs$intensity)-min(obs$intensity))
+    }
+    plot(xobs, yobs, col = gray(normalized), pch = 15, cex = 0.375, axes = FALSE, xlab = '', ylab = '',asp = 1)
+}else{
     par(mfrow = c(1, 2))
-    rotate <- function(x) t(apply(x, 2, rev))
-    image(rotate(obs$intensity), axes = FALSE, asp = 1)
+    xobs = obs$r.obs*cos(obs$theta.obs)+obs$center[1]
+    yobs = obs$r.obs*sin(obs$theta.obs)+obs$center[2]
+    if(min(obs$intensity)<0){ 
+       normalized = (obs$intensity+abs(min(obs$intensity)))/(max(obs$intensity)-min(obs$intensity))
+    }else{
+       normalized = (obs$intensity-abs(min(obs$intensity)))/(max(obs$intensity)-min(obs$intensity))
+    }
+    plot(xobs, yobs, col = gray(normalized), pch = 15, cex = 0.375, axes = FALSE, xlab = '', ylab = '',asp = 1)
     x = samples$estimate * cos(samples$theta) + obs$center[1]
     y = samples$estimate * sin(samples$theta) + obs$center[2]
     theta.plot = samples$theta
@@ -24,3 +40,5 @@ function (obs, samples)
     }
     lines(x, y, lty = 1, lwd = 1)
 }
+}
+

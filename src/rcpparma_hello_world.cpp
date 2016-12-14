@@ -19,7 +19,7 @@ using namespace std;
 
 // [[Rcpp::export]]
 
-Rcpp::List BayesBDbinary(SEXP & obs, SEXP & inimean, SEXP & nrun, SEXP & nburn, SEXP & J, SEXP & slice, SEXP & outputAll) { 
+Rcpp::List BayesBDbinary(SEXP & obs, SEXP & inimean, SEXP & nrun, SEXP & nburn, SEXP & J, SEXP & ordering, SEXP & slice, SEXP & outputAll) { 
 
 // Including additional user-defined Rcpp functions
 RNGScope scp;
@@ -29,9 +29,12 @@ Rcpp::Function unisliceL("unisliceL");
 
 // Extracting the inputs
 Rcpp::List 		      	obsL(obs);
-arma::mat thetaobs 	 	= Rcpp::as<arma::mat>(obsL["theta.obs"]);
+arma::colvec thetaobs 	 	= Rcpp::as<arma::colvec>(obsL["theta.obs"]);
 arma::colvec demean 	 	= Rcpp::as<arma::colvec>(obsL["r.obs"]);
-arma::colvec intensityobs     = Rcpp::as<arma::colvec>(obsL["intensity"]);
+arma::colvec intensityobs       = Rcpp::as<arma::colvec>(obsL["intensity"]);
+Rcpp::CharacterVector order     = Rcpp::as<CharacterVector>(ordering);
+Rcpp::CharacterVector O     = Rcpp::CharacterVector(1);O(0)="O";
+Rcpp::CharacterVector I     = Rcpp::CharacterVector(1);I(0)="I";
 int i_nrun 				= Rcpp::as<int>(nrun);
 int i_nburn				= Rcpp::as<int>(nburn);
 int i_J				= Rcpp::as<int>(J);
@@ -47,8 +50,11 @@ Rcpp::List result;
 int s					= thetaobs.size();
 int L                  		= 2*i_J+1;
 int betatau           		= 1;
-int alphalambda      		= 2;
-int betalambda       		= 1;
+double alphatau                 = 500.0;
+int alpha_a      		= 2;
+int beta_a       		= 1;
+double alpha_1                  = 0.0;
+double beta_1                   = 0.0;
 int nin = 0;
 int ninone = 0;
 int nout = 0;
@@ -347,7 +353,7 @@ for(int k=0; k<L; k++){
 	}
 }// end of sampling of z
 
-astar = 500.0 + L/2;
+astar = alphatau + L/2;
 interim = anini.t()*(anini / eigencnini);
 bstar = betatau + interim/2;
 tauinirg = Rcpp::rgamma(1,astar(0),bstar(0));
@@ -362,18 +368,26 @@ ninone = sum(intensityobs%tmpp);
 nout = s - nin;
 noutone = sum(intensityobs) - ninone;
 
-x1 = Rcpp::rbeta(1, ninone, nin - ninone);
-x2 = Rcpp::rbeta(1, noutone, nout - noutone);
+x1 = Rcpp::rbeta(1, alpha_1 + ninone, beta_1 + nin - ninone);
+x2 = Rcpp::rbeta(1, alpha_1 + noutone, beta_1 + nout - noutone);
 
+if(order(0) == I(0)){
 piinini = arma::max(x1, x2);
 pioutini = arma::min(x1, x2);
+}else if(order(0) == O(0)){
+piinini = arma::min(x1, x2);
+pioutini = arma::max(x1, x2);
+} else {
+piinini = x1;
+pioutini = x2;
+}
 
 alphaini = log(piinini * (1 - pioutini)/(pioutini *(1 - piinini)));
 betaini = log((1 - piinini)/(1 - pioutini));
 
-gx0 = -1/2 * (sum(log(eigencnini)) + tauinirg * interim) + (alphalambda - 1) * log(lambdaini) - betalambda * lambdaini;
+gx0 = -1/2 * (sum(log(eigencnini)) + tauinirg * interim) + (alpha_a - 1) * log(lambdaini) - beta_a;
 
-lambdalist = unisliceL(lambdaini, gx0, i_J, tauinirg, anini,  alphalambda,  betalambda, lambdaini);
+lambdalist = unisliceL(lambdaini, gx0, i_J, tauinirg, anini,  alpha_a,  beta_a, lambdaini);
 lambdaini = Rcpp::as<NumericVector>(lambdalist["x1"]);
 
 if(i > i_nburn){
@@ -413,21 +427,27 @@ for(int i = 0; i<i_nrun; i++){
 		estthetapts.col(i) = esttheta;
 }
 arma::colvec variance = arma::colvec(200);
-variance = sum(pow(estpts-estthetapts,2),1)/(i_nrun-1.0);
-for(int i = 0; i<i_nrun; i++){
-		estpts.col(i) = (estpts.col(i) - estthetapts.col(i))/sqrt(variance);
-}
 
+variance = sum(pow(estpts-estthetapts,2),1)/(i_nrun-1.0);
+arma::colvec maxed = arma::colvec(1);
+arma::colvec diffed = arma::colvec(1);
+arma::colvec maxes = arma::colvec(i_nrun);
 arma::colvec sortval = arma::colvec(200);
 arma::colvec sorted = arma::colvec(200);
+for(int j = 0; j<i_nrun; j++){
+maxed(0)=0.0;
 for(int i = 0; i<200; i++){
-sorted = trans(sort(estpts.row(i)));
-sortval(i) = sorted(floor(.95*i_nrun));
+diffed = abs(estpts(i,j)-estthetapts(i,j))/pow(variance(i),0.5);
+maxed(0) = fmax(maxed(0),diffed(0));
 }
+maxes(j) = maxed(0);
+}
+sorted = sort(maxes);
+sortval.fill(sorted(floor(0.95*i_nrun)));
 arma::colvec lower = arma::colvec(200);
 arma::colvec upper = arma::colvec(200);
-lower = esttheta - sortval%sqrt(variance);
-upper = esttheta + sortval%sqrt(variance);
+lower = esttheta - sortval%pow(variance,0.5);
+upper = esttheta + sortval%pow(variance,0.5);
 
 if(output_All[0] == TRUE){result = Rcpp::List::create(Rcpp::Named("estimate") = esttheta,Rcpp::Named("theta") = thetaplot,Rcpp::Named("lower") = lower,Rcpp::Named("upper") = upper, Rcpp::Named("pi.smp") = pismp, Rcpp::Named("coef.smp") = ansmp);}
 else{result = Rcpp::List::create(Rcpp::Named("estimate") = esttheta,Rcpp::Named("theta") = thetaplot,Rcpp::Named("lower") = lower,Rcpp::Named("upper") = upper);}
@@ -437,7 +457,7 @@ return result;
 
 // [[Rcpp::export]]
 
-Rcpp::List unisliceL(SEXP & ix0, SEXP & igx0, SEXP & ii_J, SEXP & itauini, SEXP & ianini, SEXP & ialphalambda, SEXP & ibetalambda, SEXP & ilambdaini){
+Rcpp::List unisliceL(SEXP & ix0, SEXP & igx0, SEXP & ii_J, SEXP & itauini, SEXP & ianini, SEXP & ialpha_a, SEXP & ibeta_a, SEXP & ilambdaini){
 RNGScope scope;
 Rcpp::Function besselIs("besselIs");
 arma::colvec x0 = Rcpp::as<arma::colvec>(ix0);
@@ -445,8 +465,8 @@ arma::colvec gx0 = Rcpp::as<arma::colvec>(igx0);
 int i_J = Rcpp::as<int>(ii_J);
 arma::colvec tauini = Rcpp::as<arma::colvec>(itauini);
 arma::colvec anini = Rcpp::as<arma::colvec>(ianini);
-int alphalambda = Rcpp::as<int>(ialphalambda);
-int betalambda = Rcpp::as<int>(ibetalambda);
+int alpha_a = Rcpp::as<int>(ialpha_a);
+int beta_a = Rcpp::as<int>(ibeta_a);
 arma::colvec lambdaini = Rcpp::as<arma::colvec>(ilambdaini);
 Rcpp::NumericVector rndsmp = Rcpp::NumericVector( Rcpp::Dimension(1)); rndsmp = Rcpp::rexp(1);
 arma::colvec logy = arma::colvec(1); logy(0) = gx0(0) - rndsmp[0];
@@ -484,7 +504,7 @@ while( res1 ){
 				eigencnini(2*i) = cnini(i);
 			} 
 			interim = anini.t()*(anini / eigencnini);
-			g = -0.5 * (sum(log(eigencnini)) + tauini * interim) + (alphalambda - 1) * log(L) - betalambda * L;
+			g = -0.5 * (sum(log(eigencnini)) + tauini * interim) + (alpha_a - 1) * log(L) - beta_a;
 			res3 = g(0) <= logy(0);
 		}
             if (res3){ 
@@ -513,7 +533,7 @@ while( res1 ){
 				eigencnini(2*i) = cnini(i);
 			}
 			interim = anini.t()*(anini / eigencnini);
-			g = -0.5 * (sum(log(eigencnini)) + tauini * interim) + (alphalambda - 1) * log(R) - betalambda * R;
+			g = -0.5 * (sum(log(eigencnini)) + tauini * interim) + (alpha_a - 1) * log(R) - beta_a;
 			res3 = (g(0) <= logy(0));
 		}
             if (res3){ 
@@ -551,7 +571,7 @@ while( res1 ){
 				eigencnini(2*i) = cnini(i);
 			}
 			interim = anini.t()*(anini / eigencnini);
-			g = -0.5 * (sum(log(eigencnini)) + tauini * interim) + (alphalambda - 1) * log(x1) - betalambda * x1;
+			g = -0.5 * (sum(log(eigencnini)) + tauini * interim) + (alpha_a - 1) * log(x1) - beta_a;
 			res3 = (x1(0) > x0(0));
 		}
 	  	  	res2 = (g(0) >= logy(0));
@@ -588,7 +608,7 @@ double eigenfun(SEXP & in, SEXP & ix) {
 
 // [[Rcpp::export]]
 
-Rcpp::List BayesBDnormal(SEXP & obs, SEXP & inimean, SEXP & nrun, SEXP & nburn, SEXP & J, SEXP & slice, SEXP & outputAll) { 
+Rcpp::List BayesBDnormal(SEXP & obs, SEXP & inimean, SEXP & nrun, SEXP & nburn, SEXP & J, SEXP & ordering_mu, SEXP & ordering_sigma, SEXP & slice, SEXP & outputAll) { 
 
 // Including additional user-defined Rcpp functions
 RNGScope scp;
@@ -598,9 +618,13 @@ Rcpp::Function besselIs("besselIs");
 
 // Extracting the inputs
 Rcpp::List 		      	obsL(obs);								// the observed (or simulated) data
-arma::mat thetaobs 	 	= Rcpp::as<arma::mat>(obsL["theta.obs"]);			// angle in polar coords of datapoints
+arma::colvec thetaobs 	 	= Rcpp::as<arma::colvec>(obsL["theta.obs"]);			// angle in polar coords of datapoints
 arma::colvec demean 	 	= Rcpp::as<arma::colvec>(obsL["r.obs"]);			// radius in polar coords of datapoints
-arma::colvec intensityobs     = Rcpp::as<arma::colvec>(obsL["intensity"]);		// image intensity of datapoints
+arma::colvec intensityobs       = Rcpp::as<arma::colvec>(obsL["intensity"]);		// image intensity of datapoints
+Rcpp::CharacterVector order_mu  = Rcpp::as<CharacterVector>(ordering_mu);
+Rcpp::CharacterVector order_sd = Rcpp::as<CharacterVector>(ordering_sigma);
+Rcpp::CharacterVector O     = Rcpp::CharacterVector(1);O(0)="O";
+Rcpp::CharacterVector I     = Rcpp::CharacterVector(1);I(0)="I";
 int i_nrun 				= Rcpp::as<int>(nrun);						// number of posterior samples to be retained
 int i_nburn				= Rcpp::as<int>(nburn);						// number of posterior samples to be burned
 int i_J				= Rcpp::as<int>(J);						// 2*J+1 is number of eigenfunctions to use in basis expansion of image boundary
@@ -612,11 +636,13 @@ Rcpp::LogicalVector slice_ = Rcpp::as<LogicalVector>(slice);
 Rcpp::List result;
 int s					= thetaobs.size();						// number of datapoints, observations						
 int L                  		= 2*i_J+1;								// 2*J+1 is number of eigenfunctions to use in basis expansion of image boundary
-int betatau           		= 1;									// hyperparameter for updating tau
-int alphalambda      		= 2;									// hyperparameters for updataing lambda
-int betalambda       		= 1;
+int betatau           		= 1;
+double alphatau                 = 500.0;									// hyperparameter for updating tau
+int alpha_a      		= 2;									// hyperparameters for updataing lambda
+int beta_a       		= 1;
 int nin = 0;												// count of the number of datapoints inside the image boundary
-int nout = 0;												// count of the number of datapoints outside the image boundary
+int nout = 0;	
+double alpha_2 = 0.01; double beta_2 = 0.01;											// count of the number of datapoints outside the image boundary
 
 
 arma::colvec mu			= arma::colvec(s); mu.fill(d_inimean);			// vector with initial guess of image boundary (just a circle of radius d_inimean)
@@ -631,6 +657,10 @@ arma::colvec mu1 		      = arma::colvec(1); mu1(0) = mu0(0);
 arma::colvec mu2 		      = arma::colvec(1); mu2(0) = mu0(0);
 arma::colvec sd1 		      = arma::colvec(1); sd1(0) = sd0(0);
 arma::colvec sd2 		      = arma::colvec(1); sd2(0) = sd0(0);
+arma::colvec tempmu1 		      = arma::colvec(1); tempmu1(0) = 0.0;
+arma::colvec tempmu2 		      = arma::colvec(1); tempmu2(0) = 0.0;
+arma::colvec tempsd1 		      = arma::colvec(1); tempsd1(0) = 0.0;
+arma::colvec tempsd2 		      = arma::colvec(1); tempsd2(0) = 0.0;
 arma::colvec xbarin 		= arma::colvec(1); xbarin.fill(0.0);
 arma::colvec xbarout 		= arma::colvec(1); xbarout.fill(0.0);
 arma::colvec xinsum 		= arma::colvec(1); xinsum.fill(0.0);
@@ -870,7 +900,7 @@ for(int k=0; k<L; k++){
 	
 	} 													// end of slice sampling of all elements of z parameter anini for this sweep
 }
-astar = 1.1 + L/2;
+astar = alphatau + L/2;
 interim = anini.t()*(anini / eigencnini);
 bstar = betatau + interim*0.5;
 tauinirg = Rcpp::rgamma(1,astar(0),bstar(0));								// sampling the tau parameter
@@ -883,16 +913,33 @@ nin = sum(tmpp); nout = s - nin;
 xbarin = tmpp.t()*intensityobs/nin; xbarout = intensityobs.t()*(1.0-tmpp)/nout;
 ssin = trans(intensityobs % tmpp - xbarin(0)* tmpp)*(intensityobs % tmpp - xbarin(0)* tmpp);
 ssout = trans(intensityobs % (1.0-tmpp) - xbarout(0)* (1.0-tmpp))*(intensityobs % (1.0-tmpp) - xbarout(0)* (1.0-tmpp));
-sd1 = pow(1/Rcpp::rgamma(1, 0.01 + nin*0.5, 1/(0.01+0.5*ssin(0) + (nin/(nin+1))*(pow(xbarin(0) - mu0(0),2.0)*0.5))),0.5);
-sd2 = pow(1/Rcpp::rgamma(1, 0.01 + nout*0.5, 1/(0.01+0.5*ssout(0) + (nout/(nout+1))*(pow(xbarout(0) - mu0(0),2.0)*0.5))),0.5);
-mu1 = Rcpp::rnorm(1,mu0(0)/(nin+1) + nin*xbarin(0)/(nin+1), sd1(0)/pow(nin+1.0,0.5));
-mu2 = Rcpp::rnorm(1,mu0(0)/(nout+1) + nout*xbarout(0)/(nout+1), sd2(0)/pow(nout+1.0,0.5));
+sd1 = pow(1/Rcpp::rgamma(1, alpha_2 + nin*0.5, 1/(beta_2+0.5*ssin(0) + (pow(sd0(0), -2)*nin/(nin+pow(sd0(0), -2)))*(pow(xbarin(0) - mu0(0),2.0)*0.5))),0.5);
+sd2 = pow(1/Rcpp::rgamma(1, alpha_2 + nout*0.5, 1/(beta_2+0.5*ssout(0) + (pow(sd0(0), -2)*nout/(nout+pow(sd0(0), -2)))*(pow(xbarout(0) - mu0(0),2.0)*0.5))),0.5);
+mu1 = Rcpp::rnorm(1,pow(sd0(0), -2)*mu0(0)/(nin+pow(sd0(0), -2)) + nin*xbarin(0)/(nin+pow(sd0(0), -2)), pow(nin+pow(sd0(0), -2),-0.5));
+mu2 = Rcpp::rnorm(1,pow(sd0(0), -2)*mu0(0)/(nout+pow(sd0(0), -2)) + nout*xbarout(0)/(nout+pow(sd0(0), -2)),pow(nout+pow(sd0(0), -2),-0.5));
 sdcomp = (intensityobs - (tmpp*mu1(0) + (1.0-tmpp)*mu2(0)))/(tmpp*sd1(0) + (1.0-tmpp)*sd2(0));
 std_sum = -sdcomp.t()*sdcomp*0.5;
+tempmu1(0) = mu1(0);tempmu2(0) = mu2(0);tempsd1(0) = sd1(0);tempsd2(0) = sd2(0);
+if(order_mu(0) == I(0)){
+mu1 = arma::max(tempmu1, tempmu2);
+mu2 = arma::min(tempmu1, tempmu2);
+}else if(order_mu(0) == O(0)){
+mu1 = arma::min(tempmu1, tempmu2);
+mu2 = arma::max(tempmu1, tempmu2);
+} else {
+mu1=mu1;mu2=mu2;
+}
+if(order_sd(0) == I(0)){
+sd1 = arma::max(tempsd1, tempsd2);
+sd2 = arma::min(tempsd1, tempsd2);
+}else if(order_sd(0) == O(0)){
+sd1 = arma::min(tempsd1, tempsd2);
+sd2 = arma::max(tempsd1, tempsd2);
+} else {
+sd1=sd1;sd2=sd2;
+}
 
-
-
-gx0 = -0.5 * (sum(log(eigencnini)) + tauinirg * interim) + (alphalambda - 1) * log(lambdaini) - betalambda * lambdaini;
+gx0 = -0.5 * (sum(log(eigencnini)) + tauinirg * interim) + (alpha_a - 1) * log(lambdaini) - beta_a;
 rndsmp = Rcpp::rexp(1);												// resetting values of variables to be used in slice sampling of a parameters (lambdaini) 
 logy(0) = gx0(0) - rndsmp[0];
 rndsmp = Rcpp::runif(1, 0, 1.0);
@@ -926,7 +973,7 @@ while( res1 ){												// begin slice sampling of a
 				eigencnini(2*i) = cnini(i);
 			} 
 			interim = anini.t()*(anini / eigencnini);
-			g = -0.5 * (sum(log(eigencnini)) + tauinirg * interim) + (alphalambda - 1) * log(LL) - betalambda * LL;
+			g = -0.5 * (sum(log(eigencnini)) + tauinirg * interim) + (alpha_a - 1) * log(LL) - beta_a;
 			res3 = g(0) <= logy(0);
 		}
             if (res3){ 
@@ -955,7 +1002,7 @@ while( res1 ){												// begin slice sampling of a
 				eigencnini(2*i) = cnini(i);
 			}
 			interim = anini.t()*(anini / eigencnini);
-			g = -0.5 * (sum(log(eigencnini)) + tauinirg * interim) + (alphalambda - 1) * log(R) - betalambda * R;
+			g = -0.5 * (sum(log(eigencnini)) + tauinirg * interim) + (alpha_a - 1) * log(R) - beta_a;
 			res3 = (g(0) <= logy(0));
 		}
             if (res3){ 
@@ -993,7 +1040,7 @@ while( res1 ){												// begin slice sampling of a
 				eigencnini(2*i) = cnini(i);
 			}
 			interim = anini.t()*(anini / eigencnini);
-			g = -0.5 * (sum(log(eigencnini)) + tauinirg * interim) + (alphalambda - 1) * log(x1) - betalambda * x1;
+			g = -0.5 * (sum(log(eigencnini)) + tauinirg * interim) + (alpha_a - 1) * log(x1) - beta_a;
 			res3 = (x1(0) > lambdaini(0));
 		}
 	  	  	res2 = (g(0) >= logy(0));
@@ -1049,21 +1096,27 @@ for(int i = 0; i<i_nrun; i++){
 		estthetapts.col(i) = esttheta;
 }
 arma::colvec variance = arma::colvec(200);
-variance = sum(pow(estpts-estthetapts,2),1)/(i_nrun-1.0);
-for(int i = 0; i<i_nrun; i++){
-		estpts.col(i) = (estpts.col(i) - estthetapts.col(i))/sqrt(variance);
-}
 
+variance = sum(pow(estpts-estthetapts,2),1)/(i_nrun-1.0);
+arma::colvec maxed = arma::colvec(1);
+arma::colvec diffed = arma::colvec(1);
+arma::colvec maxes = arma::colvec(i_nrun);
 arma::colvec sortval = arma::colvec(200);
 arma::colvec sorted = arma::colvec(200);
+for(int j = 0; j<i_nrun; j++){
+maxed(0)=0.0;
 for(int i = 0; i<200; i++){
-sorted = trans(sort(estpts.row(i)));
-sortval(i) = sorted(floor(.95*i_nrun));
+diffed = abs(estpts(i,j)-estthetapts(i,j))/pow(variance(i),0.5);
+maxed(0) = fmax(maxed(0),diffed(0));
 }
+maxes(j) = maxed(0);
+}
+sorted = sort(maxes);
+sortval.fill(sorted(floor(0.95*i_nrun)));
 arma::colvec lower = arma::colvec(200);
 arma::colvec upper = arma::colvec(200);
-lower = esttheta - sortval%sqrt(variance);
-upper = esttheta + sortval%sqrt(variance);
+lower = esttheta - sortval%pow(variance,0.5);
+upper = esttheta + sortval%pow(variance,0.5);
 
 if(output_All[0] == TRUE){result = Rcpp::List::create(Rcpp::Named("estimate") = esttheta,Rcpp::Named("theta") = thetaplot,Rcpp::Named("lower") = lower,Rcpp::Named("upper") = upper, Rcpp::Named("musig.smp") = musigsmp, Rcpp::Named("coef.smp") = ansmp);}
 else{result = Rcpp::List::create(Rcpp::Named("estimate") = esttheta,Rcpp::Named("theta") = thetaplot,Rcpp::Named("lower") = lower,Rcpp::Named("upper") = upper);}

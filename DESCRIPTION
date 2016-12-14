@@ -1,8 +1,8 @@
 Package: BayesBD
 Type: Package
 Title: Bayesian Inference for Image Boundaries
-Version: 1.0
-Date: 2016-08-02
+Version: 1.1
+Date: 2016-12-13
 Author: Nicholas Syring, Meng Li
 Maintainer: Nicholas Syring <nasyrin@gmail.com>
 Description: Provides tools for carrying out a Bayesian analysis of image boundaries.  Functions are provided
@@ -12,6 +12,6 @@ License: GPL (>= 3)
 Imports: Rcpp (>= 0.12.5), shiny
 LinkingTo: Rcpp, RcppArmadillo
 NeedsCompilation: yes
-Packaged: 2016-08-30 01:13:54 UTC; Nicholas
+Packaged: 2016-12-14 00:32:13 UTC; Nicholas
 Repository: CRAN
-Date/Publication: 2016-08-30 18:33:31
+Date/Publication: 2016-12-14 08:13:10

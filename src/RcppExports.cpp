@@ -7,8 +7,8 @@
 using namespace Rcpp;
 
 // BayesBDbinary
-Rcpp::List BayesBDbinary(SEXP & obs, SEXP & inimean, SEXP & nrun, SEXP & nburn, SEXP & J, SEXP & slice, SEXP & outputAll);
-RcppExport SEXP BayesBD_BayesBDbinary(SEXP obsSEXP, SEXP inimeanSEXP, SEXP nrunSEXP, SEXP nburnSEXP, SEXP JSEXP, SEXP sliceSEXP, SEXP outputAllSEXP){
+Rcpp::List BayesBDbinary(SEXP & obs, SEXP & inimean, SEXP & nrun, SEXP & nburn, SEXP & J, SEXP & ordering, SEXP & slice, SEXP & outputAll);
+RcppExport SEXP BayesBD_BayesBDbinary(SEXP obsSEXP, SEXP inimeanSEXP, SEXP nrunSEXP, SEXP nburnSEXP, SEXP JSEXP, SEXP orderingSEXP, SEXP sliceSEXP, SEXP outputAllSEXP){
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
@@ -17,15 +17,16 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< SEXP & >::type nrun(nrunSEXP);
     Rcpp::traits::input_parameter< SEXP & >::type nburn(nburnSEXP);
     Rcpp::traits::input_parameter< SEXP & >::type J(JSEXP);
+    Rcpp::traits::input_parameter< SEXP & >::type ordering(orderingSEXP);
     Rcpp::traits::input_parameter< SEXP & >::type slice(sliceSEXP);
     Rcpp::traits::input_parameter< SEXP & >::type outputAll(outputAllSEXP);
-    __result = Rcpp::wrap(BayesBDbinary(obs, inimean, nrun, nburn, J, slice, outputAll));
+    __result = Rcpp::wrap(BayesBDbinary(obs, inimean, nrun, nburn, J, ordering, slice, outputAll));
     return __result;
 END_RCPP
 }
 // BayesBDnormal
-Rcpp::List BayesBDnormal(SEXP & obs, SEXP & inimean, SEXP & nrun, SEXP & nburn, SEXP & J, SEXP & slice, SEXP & outputAll);
-RcppExport SEXP BayesBD_BayesBDnormal(SEXP obsSEXP, SEXP inimeanSEXP, SEXP nrunSEXP, SEXP nburnSEXP, SEXP JSEXP, SEXP sliceSEXP, SEXP outputAllSEXP){
+Rcpp::List BayesBDnormal(SEXP & obs, SEXP & inimean, SEXP & nrun, SEXP & nburn, SEXP & J, SEXP & ordering_mu, SEXP & ordering_sigma, SEXP & slice, SEXP & outputAll);
+RcppExport SEXP BayesBD_BayesBDnormal(SEXP obsSEXP, SEXP inimeanSEXP, SEXP nrunSEXP, SEXP nburnSEXP, SEXP JSEXP, SEXP ordering_muSEXP, SEXP ordering_sigmaSEXP, SEXP sliceSEXP, SEXP outputAllSEXP){
 BEGIN_RCPP
     Rcpp::RObject __result;
     Rcpp::RNGScope __rngScope;
@@ -34,9 +35,11 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< SEXP & >::type nrun(nrunSEXP);
     Rcpp::traits::input_parameter< SEXP & >::type nburn(nburnSEXP);
     Rcpp::traits::input_parameter< SEXP & >::type J(JSEXP);
+    Rcpp::traits::input_parameter< SEXP & >::type ordering_mu(ordering_muSEXP);
+    Rcpp::traits::input_parameter< SEXP & >::type ordering_sigma(ordering_sigmaSEXP);
     Rcpp::traits::input_parameter< SEXP & >::type slice(sliceSEXP);
     Rcpp::traits::input_parameter< SEXP & >::type outputAll(outputAllSEXP);
-    __result = Rcpp::wrap(BayesBDnormal(obs, inimean, nrun, nburn, J, slice, outputAll));
+    __result = Rcpp::wrap(BayesBDnormal(obs, inimean, nrun, nburn, J, ordering_mu, ordering_sigma, slice, outputAll));
     return __result;
 END_RCPP
 }

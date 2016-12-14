@@ -8,7 +8,7 @@ Visualization of posterior boundary estimates and data
 Produces plots of image data, posterior boundary estimates, and 95% uniform credible bands.
 }
 \usage{
-plotBD(obs, samples)
+plotBD(obs, samples = list())
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -21,7 +21,7 @@ plotBD(obs, samples)
 
 }
   \item{samples}{
-	output from either BayesBDbinary or BayesBDnormal.
+	output from either BayesBDbinary or BayesBDnormal.  Defaults to NA.  If NA, plots only the data from obs.
 }
 }
 \value{
@@ -31,13 +31,10 @@ plotBD(obs, samples)
 Li, M. and Ghosal, S.(2015) "Bayesian Detection of Image Boundaries." arXiv 1508.05847.
 }
 \examples{
-\dontrun{
 set.seed(12345)
 gamma.fun = ellipse(a = 0.35, b = 0.25)
 bin.obs = par2obs(m = 100, pi.in = 0.5, pi.out = 0.2, design = 'J', center = c(0.5,0.5), gamma.fun)
-bin.samp = BayesBDbinary(bin.obs, .4, 1000, 0, 10, TRUE, FALSE)
-plotBD(bin.obs, bin.samp)
-}
+plotBD(bin.obs)
 }
 
 

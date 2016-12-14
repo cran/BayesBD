@@ -38,16 +38,11 @@ parnormobs(m, mu.in, mu.out, sd.in, sd.out, design, center, gamma.fun)
 }
 }
 \examples{
-\dontrun{
 set.seed(2015)
 # use ellipse boundary
 gamma.fun = ellipse(a = 0.35, b = 0.25)
 obs = parnormobs(m = 100, mu.in = 1, sd.in = 1, mu.out = 0, sd.out = 1, design = 'J',
  center = c(0.5,0.5), gamma.fun)
-# rotate a matrix
-rotate <- function(x) t(apply(x, 2, rev))  # rotate closewise by 90 degrees
-# rotate & image it - square (asp = 1)
-image(rotate(obs$intensity), axes = FALSE, asp = 1, main = 'observation')
-}
+plotBD(obs)
 }
 

@@ -10,6 +10,7 @@ This function produces a local shiny instance for easily producing graphics of b
 BayesBDshiny()
 }
 \examples{
+?BayesBDshiny()
 \dontrun{
 BayesBDshiny()
 }

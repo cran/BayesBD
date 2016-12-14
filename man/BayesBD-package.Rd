@@ -25,20 +25,20 @@ Maintainer: Nicholas Syring <nasyrin@gmail.com>
 Li, M. and Ghosal, S.(2015) "Bayesian Detection of Image Boundaries." arXiv 1508.05847.
 }
 \examples{
-  \dontrun{
 ## Analyzing a continuous image using BayesBDnormal
 set.seed(12345)
 gamma.fun = ellipse(a = 0.35, b = 0.25)
 norm.obs = parnormobs(m = 100, mu.in = 4, mu.out = 1, sd.in = 1.5, sd.out = 1, design = 'J',
  center = c(0.5,0.5), gamma.fun)
-norm.samp = BayesBDnormal(norm.obs, .4, 4000, 1000, 10, TRUE, FALSE)
+  \dontrun{
+norm.samp = BayesBDnormal(norm.obs, .4, 4000, 1000, 10,"I","I",rep(1,10000), TRUE, FALSE)
 plotBD(norm.obs, norm.samp)}
-\dontrun{
 ## Analyzing a binary image using BayesBDbinary
 set.seed(12345)
 gamma.fun = ellipse(a = 0.35, b = 0.25)
 bin.obs = par2obs(m = 100, pi.in = 0.5, pi.out = 0.2, design = 'J', center = c(0.5,0.5), gamma.fun)
-bin.samp = BayesBDbinary(bin.obs, .4, 4000, 1000, 10, TRUE, FALSE)
+\dontrun{
+bin.samp = BayesBDbinary(bin.obs, .4, 4000, 1000, 10,"I",rep(1,10000), TRUE, FALSE)
 plotBD(bin.obs, bin.samp)}
 \dontrun{
 ## Launch a shiny session for easy use of the BayesBD package
